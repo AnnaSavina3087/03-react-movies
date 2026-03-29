@@ -1,22 +1,22 @@
 import axios from "axios";
+import type { Movie } from "../types/movie.ts";
+const myKey = import.meta.env.VITE_API_KEY;
+const URL = "https://api.themoviedb.org/3/search/movie";
 
-axios.defaults.baseURL = "https://api.themoviedb.org/3";
+interface ApiResponse {
+  results: Movie[];
+}
 
-// Вказуємо, що функція приймає ОБ'ЄКТ із query та page
-export const fetchMovies = async ({
-  query,
-  page,
-}: {
-  query: string;
-  page: number;
-}) => {
-  const response = await axios.get("/search/movie", {
+export async function handleSearch(search: string): Promise<Movie[]> {
+  const response = await axios.get<ApiResponse>(URL, {
     params: {
-      api_key: import.meta.env.VITE_API_KEY, // Переконайся, що в .env короткий ключ
-      query,
-      page,
-      language: "en-US",
+      query: search,
+    },
+    headers: {
+      accept: "application/json",
+      Authorization: `Bearer ${myKey}`,
     },
   });
-  return response.data.results;
-};
+
+  return response.data.results ?? [];
+}

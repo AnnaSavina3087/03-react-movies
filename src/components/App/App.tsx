@@ -1,99 +1,69 @@
-import { useState, useEffect } from "react";
-import type { FC } from "react";
-import Modal from "react-modal";
-import toast, { Toaster } from "react-hot-toast";
 import SearchBar from "../SearchBar/SearchBar";
-import MovieGrid from "../MovieGrid/MovieGrid";
-import MovieModal from "../MovieModal/MovieModal";
-import Loader from "../Loader/Loader";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
-import { fetchMovies } from "../../services/movieService";
-import type { Movie } from "../../types/movie";
+import { handleSearch } from "../../services/movieService.ts";
+import { useState } from "react";
+import type { Movie } from "../../types/movie.ts";
+import toast from "react-hot-toast";
+import Loader from "../Loader/Loader.tsx";
+import MovieGrid from "../MovieGrid/MovieGrid.tsx";
+import MovieModal from "../MovieModal/MovieModal.tsx";
+import ErrorMessage from "../ErrorMessage/ErrorMessage.tsx";
 
-Modal.setAppElement("#root");
-
-const App: FC = () => {
+export default function App() {
   const [movies, setMovies] = useState<Movie[]>([]);
-  const [query, setQuery] = useState<string>("");
-  const [page, setPage] = useState<number>(1);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [isError, setIsError] = useState(false);
+  const [isLoader, setIsLoader] = useState(false);
+  const [selectMovie, setSelectMovie] = useState<Movie | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = (newQuery: string) => {
-    if (newQuery === query) return;
-    setQuery(newQuery);
-    setMovies([]);
-    setPage(1);
+  async function fetchSearch(search: string) {
+    setIsLoader(true);
     setIsError(false);
-  };
+    setHasSearched(true);
 
-  useEffect(() => {
-    if (!query) return;
+    try {
+      const data = await handleSearch(search);
 
-    const getMovies = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-
-        const data = await fetchMovies({ query, page });
-
-        if (Array.isArray(data) && data.length === 0 && page === 1) {
-          toast.error("No movies found.");
-          return;
-        }
-
-        setMovies((prev) => [...prev, ...data]);
-      } catch {
-        setIsError(true);
-        toast.error("Error fetching movies!");
-      } finally {
-        setIsLoading(false);
+      if (!data || !Array.isArray(data)) {
+        throw new Error("Invalid response from server");
       }
-    };
 
-    getMovies();
-  }, [query, page]);
+      setMovies(data);
 
-  // Закрити модалку по Escape — додає контекст взаємодії з клавіатури
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSelectedMovie(null);
+      if (data.length === 0) {
+        toast("No movies found for your request.");
       }
-    };
-
-    if (selectedMovie) {
-      window.addEventListener("keydown", handleKey);
-      return () => window.removeEventListener("keydown", handleKey);
+    } catch {
+      setIsError(true);
+      setMovies([]);
+    } finally {
+      setIsLoader(false);
     }
-  }, [selectedMovie]);
+  }
 
+  function handleSelectMovie(movie: Movie) {
+    setSelectMovie(movie);
+  }
+
+  function onCloseModal() {
+    setSelectMovie(null);
+  }
   return (
-    <div>
-      <Toaster position="top-right" />
-      {/* <a className="sr-only" href="#main">
-        Skip to content
-      </a> */}
+    <>
+      <SearchBar onSubmit={fetchSearch} />
 
-      <SearchBar onSubmit={handleSearch} />
+      {isLoader && <Loader />}
 
-      <main id="main" role="main" aria-live="polite" aria-busy={isLoading}>
-        {isError && <ErrorMessage />}
+      {!isLoader && isError && <ErrorMessage />}
 
-        {movies.length > 0 && (
-          <MovieGrid movies={movies} onSelect={setSelectedMovie} />
-        )}
+      {movies.length > 0 && (
+        <MovieGrid movies={movies} onSelect={handleSelectMovie} />
+      )}
 
-        {isLoading && <Loader />}
-      </main>
+      {!isLoader && !isError && movies.length === 0 && hasSearched && (
+        <ErrorMessage />
+      )}
 
-      <MovieModal
-        movie={selectedMovie}
-        onClose={() => setSelectedMovie(null)}
-      />
-    </div>
+      {selectMovie && <MovieModal movie={selectMovie} onClose={onCloseModal} />}
+    </>
   );
-};
-
-export default App;
+}

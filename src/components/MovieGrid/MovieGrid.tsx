@@ -1,51 +1,29 @@
-import type { FC, KeyboardEvent } from "react";
+import css from "./MovieGrid.module.css";
 import type { Movie } from "../../types/movie";
-import styles from "./MovieGrid.module.css";
-// ...existing code...
-
 interface MovieGridProps {
   movies: Movie[];
   onSelect: (movie: Movie) => void;
 }
 
-const MovieGrid: FC<MovieGridProps> = ({ movies, onSelect }) => {
-  const handleKey = (e: KeyboardEvent<HTMLLIElement>, movie: Movie) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onSelect(movie);
-    }
-  };
-
+export default function MovieGrid({ movies, onSelect }: MovieGridProps) {
+  if (!movies || movies.length === 0) {
+    return null;
+  }
   return (
-    <ul className={styles.grid}>
+    <ul className={css.grid}>
       {movies.map((movie) => (
-        <li
-          key={movie.id}
-          className={styles.item}
-          onClick={() => onSelect(movie)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => handleKey(e, movie)}
-          aria-label={`Open details for ${movie.title ?? "movie"}`}
-        >
-          <div className={styles.card}>
+        <li key={movie.id}>
+          <div className={css.card} onClick={() => onSelect(movie)}>
             <img
-              className={styles.image}
-              src={
-                movie.poster_path
-                  ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                  : "https://placehold.co/500x750?text=No+Poster"
-              }
-              alt={movie.title ?? "Movie poster"}
+              className={css.image}
+              src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+              alt={movie.title}
+              loading="lazy"
             />
-            <div className={styles.info}>
-              <h2 className={styles.title}>{movie.title}</h2>
-            </div>
+            <h2 className={css.title}>{movie.title}</h2>
           </div>
         </li>
       ))}
     </ul>
   );
-};
-
-export default MovieGrid;
+}

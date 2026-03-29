@@ -1,59 +1,72 @@
-import Modal from "react-modal";
-import type { FC } from "react";
+import css from "./MovieModal.module.css";
+import { createPortal } from "react-dom";
 import type { Movie } from "../../types/movie";
-import styles from "./MovieModal.module.css";
+import { useEffect } from "react";
 
 interface MovieModalProps {
-  movie: Movie | null;
+  movie: Movie;
   onClose: () => void;
 }
 
-const MovieModal: FC<MovieModalProps> = ({ movie, onClose }) => {
-  return (
-    <Modal
-      isOpen={Boolean(movie)}
-      onRequestClose={onClose}
-      className={styles.modal}
-      overlayClassName={styles.backdrop}
-      shouldCloseOnOverlayClick={true}
+export default function MovieModal({ movie, onClose }: MovieModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Забороняємо скрол сторінки
+    document.body.style.overflow = "hidden";
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  // Закриття при кліку на backdrop
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
+  return createPortal(
+    <div
+      className={css.backdrop}
+      role="dialog"
+      aria-modal="true"
+      onClick={handleBackdropClick}
     >
-      {movie && (
-        <div className={styles.content}>
-          <button className={styles.closeBtn} onClick={onClose}>
-            ×
-          </button>
-
-          <img
-            className={styles.image}
-            src={
-              movie.backdrop_path || movie.poster_path
-                ? `https://image.tmdb.org/t/p/w780${
-                    movie.backdrop_path ?? movie.poster_path
-                  }`
-                : "https://placehold.co/780x440?text=No+Image"
-            }
-            alt={movie.title ?? "Movie image"}
-          />
-
-          <div className={styles.info}>
-            <h2 className={styles.title}>{movie.title}</h2>
-
-            <p className={styles.overview}>
-              {movie.overview || "No description available."}
-            </p>
-
-            <p className={styles.rating}>
-              <strong>Rating:</strong>{" "}
-              {movie.vote_average != null
-                ? movie.vote_average.toFixed(1)
-                : "N/A"}{" "}
-              / 10
-            </p>
-          </div>
+      <div className={css.modal}>
+        <button
+          className={css.closeButton}
+          aria-label="Close modal"
+          onClick={onClose}
+        >
+          &times;
+        </button>
+        <img
+          src={`https://image.tmdb.org/t/p/w500${movie.backdrop_path}`}
+          alt={movie.title}
+          className={css.image}
+        />
+        <div className={css.content}>
+          <h2>{movie.title}</h2>
+          <p>{movie.overview}</p>
+          <p>
+            <strong>Release Date:</strong> {movie.release_date}
+          </p>
+          <p>
+            <strong>Rating:</strong> {movie.vote_average}
+          </p>
         </div>
-      )}
-    </Modal>
+      </div>
+    </div>,
+    document.body,
   );
-};
-
-export default MovieModal;
+}
