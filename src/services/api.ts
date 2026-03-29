@@ -1,32 +1,22 @@
 import axios from "axios";
-import type { Movie } from "../types/movie";
 
-const instance = axios.create({
-  baseURL: "https://api.themoviedb.org/3",
-  headers: {
-    Accept: "application/json",
+axios.defaults.baseURL = "https://api.themoviedb.org/3";
 
-    Authorization: `Bearer ${import.meta.env.VITE_API_KEY}`,
-  },
-});
-
-interface FetchMoviesResponse {
-  results: Movie[];
-  total_pages: number;
-  total_results: number;
-}
-
-export const fetchMovies = async (query: string): Promise<Movie[]> => {
-  const response = await instance.get<FetchMoviesResponse>("/search/movie", {
+// Описуємо функцію так, щоб вона приймала об'єкт { query, page }
+export const fetchMovies = async ({
+  query,
+  page,
+}: {
+  query: string;
+  page: number;
+}) => {
+  const response = await axios.get("/search/movie", {
     params: {
-      query: query,
-      include_adult: false,
+      api_key: import.meta.env.VITE_API_KEY, // Беремо ключ з .env
+      query,
+      page,
       language: "en-US",
-      page: 1,
     },
   });
-
   return response.data.results;
 };
-
-export default instance;
