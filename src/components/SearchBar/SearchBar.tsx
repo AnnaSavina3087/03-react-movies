@@ -42,9 +42,9 @@ const SearchBar = ({ onSubmit }: SearchBarProps) => {
           aria-label="Search movies"
           aria-describedby="powered-by"
         >
-          <label htmlFor="query" className={styles.srOnly}>
+          {/* <label htmlFor="query" className={styles.srOnly}>
             Search movies
-          </label>
+          </label> */}
           <input
             id="query"
             className={styles.input}
